@@ -212,3 +212,4 @@ counted_words.txt
 tmp.txt
 groups.json
 repos.json
+get_vacancies_json.py
