@@ -1,3 +1,4 @@
+import os
 import sys
 import requests
 import pandas as pd
@@ -20,6 +21,8 @@ def check_args(args: list):
 
 
 def get_vacancies_hh(position: str, page_num: int):
+    url = 'https://hh.ru/search/vacancy'
+
     params = {
         'text': position,
         'page': page_num
@@ -29,10 +32,13 @@ def get_vacancies_hh(position: str, page_num: int):
         "User-Agent": "Mozilla/5.0"
     }
 
-    url = 'https://hh.ru/search/vacancy'
-    req = requests.get(url, params=params, headers=headers)
+    response = requests.get(url, params=params, headers=headers)
 
-    return req
+    if response.status_code != 200:
+        print(f'Error executing request to {url}: {response.status_code}')
+        sys.exit(1)
+
+    return response.text
 
 
 def clean_list(lst: list):
@@ -111,7 +117,7 @@ def parse_vacanscies(position: str, pages_quantity: int):
     for page_num in range(pages_quantity):
         page = get_vacancies_hh(position, page_num)
 
-        tree = html.fromstring(page.content)
+        tree = html.fromstring(page)
         vacancies = tree.xpath("//div[@data-qa='vacancy-serp__vacancy']")
 
         for vacancy in vacancies:
@@ -145,10 +151,15 @@ def parse_vacanscies(position: str, pages_quantity: int):
 
 
 def save_vacancies(vacancies: list):
+    output_dir = 'result'
+    output_file = 'result.csv'
+    os.makedirs(output_dir, exist_ok=True)
+    file_path = os.path.join(output_dir, output_file)
+
     df = pd.DataFrame(vacancies)
     df['Min salary'] = df['Min salary'].astype('Int32')
     df['Max salary'] = df['Max salary'].astype('Int32')
-    df.to_csv('vacancies.csv', sep=';', encoding='cp1251')
+    df.to_csv(file_path, sep=';', encoding='cp1251')
     print(df)
 
 
@@ -159,5 +170,5 @@ def main():
     save_vacancies(vacancies)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
